@@ -26,12 +26,17 @@ func (err *UnexpectedResponseCodeError) Error() string {
 
 
 // request is the procedure that does the ditch-work of making the request, marshaling parameters, and unmarshaling results.
-func request(method string, client *http.Client, url string, input, output interface{}, reqConfig func(*http.Request)) error {
+func request(method string, url string, opts Options) error {
 	var body io.Reader
 
+	client := opts.CustomClient
+	if client == nil {
+		client = new(http.Client)
+	}
+
 	body = nil
-	if input != nil {
-		bodyText, err := json.Marshal(input)
+	if opts.ReqBody != nil {
+		bodyText, err := json.Marshal(opts.ReqBody)
 		if err != nil {
 			return err
 		}
@@ -44,8 +49,10 @@ func request(method string, client *http.Client, url string, input, output inter
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
-	if reqConfig != nil {
-		reqConfig(req)
+	if opts.MoreHeaders != nil {
+		for k, v := range opts.MoreHeaders {
+			req.Header.Add(k, v)
+		}
 	}
 
 	response, err := client.Do(req)
@@ -60,40 +67,51 @@ func request(method string, client *http.Client, url string, input, output inter
 	}
 	defer response.Body.Close()
 
-	if output != nil {
+	if opts.Results != nil {
 		jsonResult, err := ioutil.ReadAll(response.Body)
 		if err != nil {
 			return err
 		}
 
-		err = json.Unmarshal(jsonResult, output)
+		err = json.Unmarshal(jsonResult, opts.Results)
 	}
 	return err
 }
 
 // Post makes a POST request against a server using the provided HTTP client.
 // The url must be a fully-formed URL string.
-// If input is to be embedded in a POST request body, it will be encoded in JSON format.
-// Otherwise, provide nil for input.
-// If output is to be expected from the response,
-// provide either a pointer to the container,
-// or a pointer to a nil-initialized pointer variable.
-// The latter method will cause Post to allocate the container type for you.
-// If no response is expected, provide a nil output reference.
-func Post(client *http.Client, url string, input interface{}, output interface{}, reqConfig func(*http.Request)) error {
-	return request("POST", client, url, input, output, reqConfig)
+func Post(url string, opts Options) error {
+	return request("POST", url, opts)
 }
 
 // Get makes a GET request against a server using the provided HTTP client.
 // The url must be a fully-formed URL string.
-// If input is to be embedded in a POST request body, it will be encoded in JSON format.
-// Otherwise, provide nil for input.
-// If output is to be expected from the response,
-// provide either a pointer to the container,
+func Get(url string, opts Options) error {
+	return request("GET", url, opts)
+}
+
+
+// Options describes a set of optional parameters to the various request calls.
+//
+// The custom client can be used for a variety of purposes beyond selecting encrypted versus unencrypted channels.
+// Transports can be defined to provide augmented logging, header manipulation, et. al.
+//
+// If the ReqBody field is provided, it will be embedded as a JSON object.
+// Otherwise, provide nil.
+//
+// If JSON output is to be expected from the response,
+// provide either a pointer to the container structure in Results,
 // or a pointer to a nil-initialized pointer variable.
-// The latter method will cause Post to allocate the container type for you.
-// If no response is expected, provide a nil output reference.
-func Get(client *http.Client, url string, input, output interface{}, reqConfig func(*http.Request)) error {
-	return request("GET", client, url, input, output, reqConfig)
+// The latter method will cause the unmarshaller to allocate the container type for you.
+// If no response is expected, provide a nil Results value.
+//
+// The MoreHeaders map, if non-nil or empty, provides a set of headers to add to those
+// already present in the request.  At present, only Accepted and Content-Type are set
+// by default.
+type Options struct {
+	CustomClient *http.Client
+	ReqBody interface{}
+	Results interface{}
+	MoreHeaders map[string]string
 }
 
