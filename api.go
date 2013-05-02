@@ -4,6 +4,7 @@ package perigee
 
 
 import (
+	"fmt"
 	"net/http"
 	"io"
 	"io/ioutil"
@@ -19,21 +20,13 @@ type UnexpectedResponseCodeError struct {
 	Expected, Actual int
 }
 
-func (err *UnexpectedResponseError) Error() string {
+func (err *UnexpectedResponseCodeError) Error() string {
 	return fmt.Sprintf("Expected HTTP response code %d; got %d instead", err.Expected, err.Actual)
 }
 
 
-// Post makes a POST request against a server using the provided HTTP client.
-// The url must be a fully-formed URL string.
-// If input is to be embedded in a POST request body, it will be encoded in JSON format.
-// Otherwise, provide nil for input.
-// If output is to be expected from the response,
-// provide either a pointer to the container,
-// or a pointer to a nil-initialized pointer variable.
-// The latter method will cause Post to allocate the container type for you.
-// If no response is expected, provide a nil output reference.
-func Post(client *http.Client, url string, input interface{}, output interface{}) error {
+// request is the procedure that does the ditch-work of making the request, marshaling parameters, and unmarshaling results.
+func request(method string, client *http.Client, url string, input, output interface{}, reqConfig func(*http.Request)) error {
 	var body io.Reader
 
 	body = nil
@@ -45,12 +38,15 @@ func Post(client *http.Client, url string, input interface{}, output interface{}
 		body = strings.NewReader(string(bodyText))
 	}
 
-	req, err := http.NewRequest("POST", url, body)
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
+	if reqConfig != nil {
+		reqConfig(req)
+	}
 
 	response, err := client.Do(req)
 	if err != nil {
@@ -59,7 +55,7 @@ func Post(client *http.Client, url string, input interface{}, output interface{}
 	if response.StatusCode != 200 {
 		return &UnexpectedResponseCodeError{
 			Expected: 200,
-			Actual: response.StatusCode
+			Actual: response.StatusCode,
 		}
 	}
 	defer response.Body.Close()
@@ -73,5 +69,31 @@ func Post(client *http.Client, url string, input interface{}, output interface{}
 		err = json.Unmarshal(jsonResult, output)
 	}
 	return err
+}
+
+// Post makes a POST request against a server using the provided HTTP client.
+// The url must be a fully-formed URL string.
+// If input is to be embedded in a POST request body, it will be encoded in JSON format.
+// Otherwise, provide nil for input.
+// If output is to be expected from the response,
+// provide either a pointer to the container,
+// or a pointer to a nil-initialized pointer variable.
+// The latter method will cause Post to allocate the container type for you.
+// If no response is expected, provide a nil output reference.
+func Post(client *http.Client, url string, input interface{}, output interface{}, reqConfig func(*http.Request)) error {
+	return request("POST", client, url, input, output, reqConfig)
+}
+
+// Get makes a GET request against a server using the provided HTTP client.
+// The url must be a fully-formed URL string.
+// If input is to be embedded in a POST request body, it will be encoded in JSON format.
+// Otherwise, provide nil for input.
+// If output is to be expected from the response,
+// provide either a pointer to the container,
+// or a pointer to a nil-initialized pointer variable.
+// The latter method will cause Post to allocate the container type for you.
+// If no response is expected, provide a nil output reference.
+func Get(client *http.Client, url string, input, output interface{}, reqConfig func(*http.Request)) error {
+	return request("GET", client, url, input, output, reqConfig)
 }
 
