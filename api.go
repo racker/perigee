@@ -17,7 +17,8 @@ import (
 // Most often, this is due to an actual error condition (e.g., getting a 404 for a resource when you expect a 200).
 // However, it needn't always be the case (e.g., getting a 204 (No Content) response back when a 200 is expected).
 type UnexpectedResponseCodeError struct {
-	Expected, Actual int
+	Expected []int
+	Actual int
 }
 
 func (err *UnexpectedResponseCodeError) Error() string {
@@ -28,6 +29,11 @@ func (err *UnexpectedResponseCodeError) Error() string {
 // request is the procedure that does the ditch-work of making the request, marshaling parameters, and unmarshaling results.
 func request(method string, url string, opts Options) error {
 	var body io.Reader
+
+	acceptableResponseCodes := opts.OkCodes
+	if len(acceptableResponseCodes) == 0 {
+		acceptableResponseCodes = []int{200}
+	}
 
 	client := opts.CustomClient
 	if client == nil {
@@ -59,14 +65,13 @@ func request(method string, url string, opts Options) error {
 	if err != nil {
 		return err
 	}
-	if response.StatusCode != 200 {
+	if not_in(response.StatusCode, acceptableResponseCodes) {
 		return &UnexpectedResponseCodeError{
-			Expected: 200,
+			Expected: acceptableResponseCodes,
 			Actual: response.StatusCode,
 		}
 	}
 	defer response.Body.Close()
-
 	if opts.Results != nil {
 		jsonResult, err := ioutil.ReadAll(response.Body)
 		if err != nil {
@@ -76,6 +81,17 @@ func request(method string, url string, opts Options) error {
 		err = json.Unmarshal(jsonResult, opts.Results)
 	}
 	return err
+}
+
+// not_in returns false if, and only if, the provided needle is _not_
+// in the given set of integers.
+func not_in(needle int, haystack []int) bool {
+	for _, straw := range haystack {
+		if needle == straw {
+			return false
+		}
+	}
+	return true
 }
 
 // Post makes a POST request against a server using the provided HTTP client.
@@ -90,6 +106,11 @@ func Get(url string, opts Options) error {
 	return request("GET", url, opts)
 }
 
+// Delete makes a DELETE request against a server using the provided HTTP client.
+// The url must be a fully-formed URL string.
+func Delete(url string, opts Options) error {
+	return request("DELETE", url, opts)
+}
 
 // Options describes a set of optional parameters to the various request calls.
 //
@@ -113,5 +134,6 @@ type Options struct {
 	ReqBody interface{}
 	Results interface{}
 	MoreHeaders map[string]string
+	OkCodes []int
 }
 
