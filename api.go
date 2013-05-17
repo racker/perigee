@@ -17,11 +17,12 @@ import (
 // Most often, this is due to an actual error condition (e.g., getting a 404 for a resource when you expect a 200).
 // However, it needn't always be the case (e.g., getting a 204 (No Content) response back when a 200 is expected).
 type UnexpectedResponseCodeError struct {
-	Expected, Actual int
+	Expected []int
+	Actual int
 }
 
 func (err *UnexpectedResponseCodeError) Error() string {
-	return fmt.Sprintf("Expected HTTP response code %d; got %d instead", err.Expected, err.Actual)
+	return fmt.Sprintf("Expected HTTP response code %v; got %d instead", err.Expected, err.Actual)
 }
 
 
@@ -59,9 +60,23 @@ func request(method string, url string, opts Options) error {
 	if err != nil {
 		return err
 	}
-	if response.StatusCode != 200 {
+	if opts.OkCodes != nil && len(opts.OkCodes) > 0 {
+		foundOkCode := false
+		for _, code := range opts.OkCodes {
+			if response.StatusCode == code {
+				foundOkCode = true
+				break
+			}
+		}
+		if ! foundOkCode {
+			return &UnexpectedResponseCodeError{
+				Expected: opts.OkCodes,
+				Actual: response.StatusCode,
+			}
+		}
+	} else if response.StatusCode != 200 {
 		return &UnexpectedResponseCodeError{
-			Expected: 200,
+			Expected: []int{200},
 			Actual: response.StatusCode,
 		}
 	}
@@ -113,5 +128,6 @@ type Options struct {
 	ReqBody interface{}
 	Results interface{}
 	MoreHeaders map[string]string
+	OkCodes []int
 }
 
