@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -44,6 +45,9 @@ func request(method string, url string, opts Options) error {
 			return err
 		}
 		body = strings.NewReader(string(bodyText))
+		if opts.DumpReqJson {
+			log.Printf("Making request:\n%#v\n", string(bodyText))
+		}
 	}
 
 	req, err := http.NewRequest(method, url, body)
@@ -132,4 +136,5 @@ type Options struct {
 	Results      interface{}
 	MoreHeaders  map[string]string
 	OkCodes      []int
+	DumpReqJson  bool
 }
