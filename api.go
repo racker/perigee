@@ -80,6 +80,9 @@ func request(method string, url string, opts Options) error {
 		}
 
 		err = json.Unmarshal(jsonResult, opts.Results)
+		if opts.ResponseJson != nil {
+			*opts.ResponseJson = jsonResult
+		}
 	}
 	return err
 }
@@ -137,4 +140,5 @@ type Options struct {
 	MoreHeaders  map[string]string
 	OkCodes      []int
 	DumpReqJson  bool
+	ResponseJson *[]byte
 }
