@@ -116,6 +116,12 @@ func Delete(url string, opts Options) error {
 	return request("DELETE", url, opts)
 }
 
+// Put makes a PUT request against a server using the provided HTTP client.
+// The url must be a fully-formed URL string.
+func Put(url string, opts Options) error {
+	return request("PUT", url, opts)
+}
+
 // Options describes a set of optional parameters to the various request calls.
 //
 // The custom client can be used for a variety of purposes beyond selecting encrypted versus unencrypted channels.
