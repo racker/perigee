@@ -66,6 +66,9 @@ func request(method string, url string, opts Options) error {
 	if err != nil {
 		return err
 	}
+	if opts.StatusCode != nil {
+		*opts.StatusCode = response.StatusCode
+	}
 	if not_in(response.StatusCode, acceptableResponseCodes) {
 		return &UnexpectedResponseCodeError{
 			Expected: acceptableResponseCodes,
@@ -139,12 +142,21 @@ func Put(url string, opts Options) error {
 // The MoreHeaders map, if non-nil or empty, provides a set of headers to add to those
 // already present in the request.  At present, only Accepted and Content-Type are set
 // by default.
+//
+// OkCodes provides a set of acceptable, positive responses.
+//
+// If provided, StatusCode specifies a pointer to an integer, which will receive the
+// returned HTTP status code, successful or not.
+//
+// ResponseJson, if specified, provides a means for returning the raw JSON.  This is
+// most useful for diagnostics.
 type Options struct {
 	CustomClient *http.Client
 	ReqBody      interface{}
 	Results      interface{}
 	MoreHeaders  map[string]string
 	OkCodes      []int
+	StatusCode *int
 	DumpReqJson  bool
 	ResponseJson *[]byte
 }
