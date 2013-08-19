@@ -67,11 +67,8 @@ func request(method string, url string, opts Options) error {
 	if err != nil {
 		return err
 	}
-	if opts.Location != nil {
-		location, err := response.Location()
-		if err == nil {
-			*opts.Location = location.String()
-		}
+	if opts.Response != nil {
+		*opts.Response = *response
 	}
 	if opts.StatusCode != nil {
 		*opts.StatusCode = response.StatusCode
@@ -151,6 +148,9 @@ func Put(url string, opts Options) error {
 //
 // OkCodes provides a set of acceptable, positive responses.
 //
+// If provided, Response will return the http response from the request call.
+// Note: Response.Body is always closed and will not be available from this return value.
+//
 // If provided, StatusCode specifies a pointer to an integer, which will receive the
 // returned HTTP status code, successful or not.
 //
@@ -163,7 +163,7 @@ type Options struct {
 	MoreHeaders  map[string]string
 	OkCodes      []int
 	StatusCode   *int
-	Location     *string
+	Response     *http.Response
 	DumpReqJson  bool
 	ResponseJson *[]byte
 }

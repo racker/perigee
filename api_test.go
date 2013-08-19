@@ -64,16 +64,54 @@ func TestLocation(t *testing.T) {
 	defer ts.Close()
 
 	var code int
-	var location string
+	var response http.Response
 
 	options := Options{
 		StatusCode: &code,
-		Location:   &location,
+		Response:   &response,
 	}
 	err := request("GET", ts.URL, options)
 	if err != nil {
 		t.Fatalf("should not have error: %s", err)
 	}
+
+	location, err := response.Location()
+	if err != nil {
+		t.Fatalf("should not have error: %s", err)
+	}
+
+	if location.String() != newLocation {
+		t.Fatalf("location returned \"%s\" is not \"%s\"", location.String(), newLocation)
+	}
+}
+
+func TestHeaders(t *testing.T) {
+	newLocation := "http://www.example.com"
+	handler := http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Location", newLocation)
+			w.Write([]byte("testing"))
+		})
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	var code int
+	var response http.Response
+
+	options := Options{
+		StatusCode: &code,
+		Response:   &response,
+	}
+	err := request("GET", ts.URL, options)
+	if err != nil {
+		t.Fatalf("should not have error: %s", err)
+	}
+
+	location := response.Header.Get("Location")
+	if location == "" {
+		t.Fatalf("Location should not empty")
+	}
+
 	if location != newLocation {
 		t.Fatalf("location returned \"%s\" is not \"%s\"", location, newLocation)
 	}
