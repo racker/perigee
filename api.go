@@ -63,6 +63,7 @@ func request(method string, url string, opts Options) error {
 	}
 
 	response, err := client.Do(req)
+	defer response.Body.Close()
 	if err != nil {
 		return err
 	}
@@ -81,7 +82,6 @@ func request(method string, url string, opts Options) error {
 			Actual:   response.StatusCode,
 		}
 	}
-	defer response.Body.Close()
 	if opts.Results != nil {
 		jsonResult, err := ioutil.ReadAll(response.Body)
 		if err != nil {
