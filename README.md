@@ -21,7 +21,7 @@ go get github.com/racker/perigee
 To run unit tests:
 
 ```bash
-% go test github.com/racker/perigee/...
+go test github.com/racker/perigee/...
 ```
 
 ## Contributing
