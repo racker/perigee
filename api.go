@@ -66,6 +66,12 @@ func request(method string, url string, opts Options) error {
 	if err != nil {
 		return err
 	}
+	if opts.Location != nil {
+		location, err := response.Location()
+		if err == nil {
+			*opts.Location = location.String()
+		}
+	}
 	if opts.StatusCode != nil {
 		*opts.StatusCode = response.StatusCode
 	}
@@ -156,7 +162,8 @@ type Options struct {
 	Results      interface{}
 	MoreHeaders  map[string]string
 	OkCodes      []int
-	StatusCode *int
+	StatusCode   *int
+	Location     *string
 	DumpReqJson  bool
 	ResponseJson *[]byte
 }
