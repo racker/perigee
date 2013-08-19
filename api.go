@@ -63,8 +63,12 @@ func request(method string, url string, opts Options) error {
 	}
 
 	response, err := client.Do(req)
+	defer response.Body.Close()
 	if err != nil {
 		return err
+	}
+	if opts.Response != nil {
+		*opts.Response = *response
 	}
 	if opts.StatusCode != nil {
 		*opts.StatusCode = response.StatusCode
@@ -75,7 +79,6 @@ func request(method string, url string, opts Options) error {
 			Actual:   response.StatusCode,
 		}
 	}
-	defer response.Body.Close()
 	if opts.Results != nil {
 		jsonResult, err := ioutil.ReadAll(response.Body)
 		if err != nil {
@@ -145,6 +148,9 @@ func Put(url string, opts Options) error {
 //
 // OkCodes provides a set of acceptable, positive responses.
 //
+// If provided, Response will return the http response from the request call.
+// Note: Response.Body is always closed and will not be available from this return value.
+//
 // If provided, StatusCode specifies a pointer to an integer, which will receive the
 // returned HTTP status code, successful or not.
 //
@@ -156,7 +162,8 @@ type Options struct {
 	Results      interface{}
 	MoreHeaders  map[string]string
 	OkCodes      []int
-	StatusCode *int
+	StatusCode   *int
+	Response     *http.Response
 	DumpReqJson  bool
 	ResponseJson *[]byte
 }
