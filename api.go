@@ -25,8 +25,9 @@ func (err *UnexpectedResponseCodeError) Error() string {
 }
 
 // request is the procedure that does the ditch-work of making the request, marshaling parameters, and unmarshaling results.
-func request(method string, url string, opts Options) error {
+func request(method string, url string, opts Options) (*Response, error) {
 	var body io.Reader
+	var response Response
 
 	acceptableResponseCodes := opts.OkCodes
 	if len(acceptableResponseCodes) == 0 {
@@ -42,7 +43,7 @@ func request(method string, url string, opts Options) error {
 	if opts.ReqBody != nil {
 		bodyText, err := json.Marshal(opts.ReqBody)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		body = strings.NewReader(string(bodyText))
 		if opts.DumpReqJson {
@@ -52,7 +53,7 @@ func request(method string, url string, opts Options) error {
 
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
@@ -62,32 +63,30 @@ func request(method string, url string, opts Options) error {
 		}
 	}
 
-	response, err := client.Do(req)
+	httpResponse, err := client.Do(req)
+	response.HttpResponse = *httpResponse
+	response.StatusCode = httpResponse.StatusCode
+	defer httpResponse.Body.Close()
 	if err != nil {
-		return err
+		return &response, err
 	}
-	if opts.StatusCode != nil {
-		*opts.StatusCode = response.StatusCode
-	}
-	if not_in(response.StatusCode, acceptableResponseCodes) {
-		return &UnexpectedResponseCodeError{
+	if not_in(httpResponse.StatusCode, acceptableResponseCodes) {
+		return &response, &UnexpectedResponseCodeError{
 			Expected: acceptableResponseCodes,
-			Actual:   response.StatusCode,
+			Actual:   httpResponse.StatusCode,
 		}
 	}
-	defer response.Body.Close()
 	if opts.Results != nil {
-		jsonResult, err := ioutil.ReadAll(response.Body)
+		jsonResult, err := ioutil.ReadAll(httpResponse.Body)
+		response.JsonResult = jsonResult
 		if err != nil {
-			return err
+			return &response, err
 		}
 
 		err = json.Unmarshal(jsonResult, opts.Results)
-		if opts.ResponseJson != nil {
-			*opts.ResponseJson = jsonResult
-		}
+		response.Results = opts.Results
 	}
-	return err
+	return &response, err
 }
 
 // not_in returns false if, and only if, the provided needle is _not_
@@ -103,29 +102,29 @@ func not_in(needle int, haystack []int) bool {
 
 // Post makes a POST request against a server using the provided HTTP client.
 // The url must be a fully-formed URL string.
-func Post(url string, opts Options) error {
+func Post(url string, opts Options) (*Response, error) {
 	return request("POST", url, opts)
 }
 
 // Get makes a GET request against a server using the provided HTTP client.
 // The url must be a fully-formed URL string.
-func Get(url string, opts Options) error {
+func Get(url string, opts Options) (*Response, error) {
 	return request("GET", url, opts)
 }
 
 // Delete makes a DELETE request against a server using the provided HTTP client.
 // The url must be a fully-formed URL string.
-func Delete(url string, opts Options) error {
+func Delete(url string, opts Options) (*Response, error) {
 	return request("DELETE", url, opts)
 }
 
 // Put makes a PUT request against a server using the provided HTTP client.
 // The url must be a fully-formed URL string.
-func Put(url string, opts Options) error {
+func Put(url string, opts Options) (*Response, error) {
 	return request("PUT", url, opts)
 }
 
-// Options describes a set of optional parameters to the various request calls.
+// Options describes a set of optional input parameters to the various request calls.
 //
 // The custom client can be used for a variety of purposes beyond selecting encrypted versus unencrypted channels.
 // Transports can be defined to provide augmented logging, header manipulation, et. al.
@@ -133,30 +132,39 @@ func Put(url string, opts Options) error {
 // If the ReqBody field is provided, it will be embedded as a JSON object.
 // Otherwise, provide nil.
 //
-// If JSON output is to be expected from the response,
-// provide either a pointer to the container structure in Results,
-// or a pointer to a nil-initialized pointer variable.
-// The latter method will cause the unmarshaller to allocate the container type for you.
-// If no response is expected, provide a nil Results value.
-//
 // The MoreHeaders map, if non-nil or empty, provides a set of headers to add to those
 // already present in the request.  At present, only Accepted and Content-Type are set
 // by default.
 //
 // OkCodes provides a set of acceptable, positive responses.
 //
-// If provided, StatusCode specifies a pointer to an integer, which will receive the
-// returned HTTP status code, successful or not.
-//
-// ResponseJson, if specified, provides a means for returning the raw JSON.  This is
-// most useful for diagnostics.
+// If Results is true then the Response will return JsonResult and Result
+
 type Options struct {
 	CustomClient *http.Client
-	ReqBody      interface{}
-	Results      interface{}
+	DumpReqJson  bool
 	MoreHeaders  map[string]string
 	OkCodes      []int
-	StatusCode *int
-	DumpReqJson  bool
-	ResponseJson *[]byte
+	ReqBody      interface{}
+	Results      interface{}
+}
+
+// Response contains return values from the various request calls.
+//
+// HttpResponse will return the http response from the request call.
+// Note: HttpResponse.Body is always closed and will not be available from this return value.
+//
+// StatusCode specifies the returned HTTP status code, successful or not.
+//
+// If Results is specified in the Options:
+// - JsonResult will contain the raw return from the request call
+//   This is most useful for diagnostics.
+// - Result will contain the unmarshalled json either in the Result passed in
+//   or the unmarshaller will allocate the container type for you.
+
+type Response struct {
+	HttpResponse http.Response
+	JsonResult   []byte
+	Results      interface{}
+	StatusCode   int
 }
