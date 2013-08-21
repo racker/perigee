@@ -21,7 +21,7 @@ go get github.com/racker/perigee
 To run unit tests:
 
 ```bash
-t.b.d.
+go test github.com/racker/perigee
 ```
 
 ## Contributing
@@ -34,15 +34,14 @@ However, this should serve as a working first-draft.
 The master branch must always be a valid build.
 The `go get` command will not work otherwise.
 Therefore, development must occur on a different branch.
-As with Pyrax, we choose to stage all changes in a branch named "working."
 
-When creating a feature branch, do so off the working branch:
+When creating a feature branch, do so off the master branch:
 
 ```bash
-git checkout working
+git checkout master
 git pull
 git checkout -b featureBranch
-git checkout -b featureBranch-wip
+git checkout -b featureBranch-wip   # optional
 ```
 
 Perform all your editing and testing in the WIP-branch.
@@ -50,7 +49,7 @@ Feel free to make as many commits as you see fit.
 You may even open "WIP" pull requests from your feature branch to seek feedback.
 WIP pull requests will **never** be merged, however.
 
-To get code merged, you'll need to "squash" your changes into a single commit.
+To get code merged, you'll need to "squash" your changes into one or more clean commits in the feature branch.
 These steps should be followed:
 
 ```bash
@@ -60,12 +59,12 @@ git commit -a
 git push origin featureBranch
 ```
 
-You may now open a nice, clean, self-contained pull request from featureBranch to working.
+You may now open a nice, clean, self-contained pull request from featureBranch to master.
 
 The `git commit -a` command above will open a text editor so that
 you may provide a comprehensive description of the changes.
 
-In general, when submitting a pull request against working,
+In general, when submitting a pull request against master,
 be sure to answer the following questions:
 
 - What is the problem?
@@ -77,7 +76,7 @@ be sure to answer the following questions:
 Remember that monster-sized pull requests are a bear to code-review,
 so having helpful commit logs are an absolute must to review changes as quickly as possible.
 
-Finally, (s)he who breaks working is ultimately responsible for fixing working.
+Finally, (s)he who breaks master is ultimately responsible for fixing master.
 
 ### Source Representation
 
