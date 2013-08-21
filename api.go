@@ -170,8 +170,8 @@ type Options struct {
 	Results      interface{}
 	MoreHeaders  map[string]string
 	OkCodes      []int
-	StatusCode   *int `DEPRECATED`
-	DumpReqJson  bool `UNSUPPORTED`
+	StatusCode   *int    `DEPRECATED`
+	DumpReqJson  bool    `UNSUPPORTED`
 	ResponseJson *[]byte `DEPRECATED`
 }
 
@@ -189,8 +189,8 @@ type Options struct {
 //   or the unmarshaller will allocate the container type for you.
 
 type Response struct {
-  HttpResponse http.Response
-  JsonResult   []byte
-  Results      interface{}
-  StatusCode   int
+	HttpResponse http.Response
+	JsonResult   []byte
+	Results      interface{}
+	StatusCode   int
 }
