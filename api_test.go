@@ -15,7 +15,7 @@ func TestNormal(t *testing.T) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
-	response, err := request("GET", ts.URL, Options{})
+	response, err := Request("GET", ts.URL, Options{})
 	if err != nil {
 		t.Fatalf("should not have error: %s", err)
 	}
@@ -37,7 +37,7 @@ func TestOKCodes(t *testing.T) {
 	options := Options{
 		OkCodes: []int{expectCode},
 	}
-	results, err := request("GET", ts.URL, options)
+	results, err := Request("GET", ts.URL, options)
 	if err != nil {
 		t.Fatalf("should not have error: %s", err)
 	}
@@ -56,7 +56,7 @@ func TestLocation(t *testing.T) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
-	response, err := request("GET", ts.URL, Options{})
+	response, err := Request("GET", ts.URL, Options{})
 	if err != nil {
 		t.Fatalf("should not have error: %s", err)
 	}
@@ -81,7 +81,7 @@ func TestHeaders(t *testing.T) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
-	response, err := request("GET", ts.URL, Options{})
+	response, err := Request("GET", ts.URL, Options{})
 	if err != nil {
 		t.Fatalf("should not have error: %s", err)
 	}
@@ -114,7 +114,7 @@ func TestJson(t *testing.T) {
 	}
 	var data Data
 
-	response, err := request("GET", ts.URL, Options{Results: &data})
+	response, err := Request("GET", ts.URL, Options{Results: &data})
 	if err != nil {
 		t.Fatalf("should not have error: %s", err)
 	}
