@@ -24,8 +24,10 @@ func (err *UnexpectedResponseCodeError) Error() string {
 	return fmt.Sprintf("Expected HTTP response code %d; got %d instead", err.Expected, err.Actual)
 }
 
-// request is the procedure that does the ditch-work of making the request, marshaling parameters, and unmarshaling results.
-func request(method string, url string, opts Options) (*Response, error) {
+// Request issues an HTTP request, marshaling parameters, and unmarshaling results, as configured in the provided Options parameter.
+// The Response structure returned, if any, will include accumulated results recovered from the HTTP server.
+// See the Response structure for more details.
+func Request(method string, url string, opts Options) (*Response, error) {
 	var body io.Reader
 	var response Response
 
@@ -110,29 +112,45 @@ func not_in(needle int, haystack []int) bool {
 
 // Post makes a POST request against a server using the provided HTTP client.
 // The url must be a fully-formed URL string.
+// DEPRECATED.  Use Request() instead.
 func Post(url string, opts Options) error {
-	_, err := request("POST", url, opts)
+	r, err := Request("POST", url, opts)
+	if opts.Response != nil {
+		*opts.Response = r
+	}
 	return err
 }
 
 // Get makes a GET request against a server using the provided HTTP client.
 // The url must be a fully-formed URL string.
+// DEPRECATED.  Use Request() instead.
 func Get(url string, opts Options) error {
-	_, err := request("GET", url, opts)
+	r, err := Request("GET", url, opts)
+	if opts.Response != nil {
+		*opts.Response = r
+	}
 	return err
 }
 
 // Delete makes a DELETE request against a server using the provided HTTP client.
 // The url must be a fully-formed URL string.
+// DEPRECATED.  Use Request() instead.
 func Delete(url string, opts Options) error {
-	_, err := request("DELETE", url, opts)
+	r, err := Request("DELETE", url, opts)
+	if opts.Response != nil {
+		*opts.Response = r
+	}
 	return err
 }
 
 // Put makes a PUT request against a server using the provided HTTP client.
 // The url must be a fully-formed URL string.
+// DEPRECATED.  Use Request() instead.
 func Put(url string, opts Options) error {
-	_, err := request("PUT", url, opts)
+	r, err := Request("PUT", url, opts)
+	if opts.Response != nil {
+		*opts.Response = r
+	}
 	return err
 }
 
@@ -164,6 +182,11 @@ func Put(url string, opts Options) error {
 //
 // DumpReqJson, if set to true, will cause the request to appear to stdout for debugging purposes.
 // This attribute may be removed at any time in the future; DO NOT use this attribute in production software.
+//
+// Response, if set, provides a way to communicate the complete set of HTTP response, raw JSON, status code, and
+// other useful attributes back to the caller.  Note that the Request() method returns a Response structure as part
+// of its public interface; you don't need to set the Response field here to use this structure.  The Response field
+// exists primarily for legacy or deprecated functions. 
 type Options struct {
 	CustomClient *http.Client
 	ReqBody      interface{}
@@ -173,6 +196,7 @@ type Options struct {
 	StatusCode   *int    `DEPRECATED`
 	DumpReqJson  bool    `UNSUPPORTED`
 	ResponseJson *[]byte `DEPRECATED`
+	Response     **Response
 }
 
 // Response contains return values from the various request calls.
