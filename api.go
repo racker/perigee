@@ -66,9 +66,11 @@ func Request(method string, url string, opts Options) (*Response, error) {
 	}
 
 	httpResponse, err := client.Do(req)
-	response.HttpResponse = *httpResponse
-	response.StatusCode = httpResponse.StatusCode
-	defer httpResponse.Body.Close()
+	if httpResponse != nil {
+		response.HttpResponse = *httpResponse
+		response.StatusCode = httpResponse.StatusCode
+		defer httpResponse.Body.Close()
+	}
 
 	if err != nil {
 		return &response, err
