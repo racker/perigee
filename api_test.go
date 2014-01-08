@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -93,6 +94,41 @@ func TestHeaders(t *testing.T) {
 
 	if location != newLocation {
 		t.Fatalf("location returned \"%s\" is not \"%s\"", location, newLocation)
+	}
+}
+
+func TestCustomHeaders(t *testing.T) {
+	var contentType, accept, contentLength string
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		m := map[string][]string(r.Header)
+		contentType = m["Content-Type"][0]
+		accept = m["Accept"][0]
+		contentLength = m["Content-Length"][0]
+	})
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	_, err := Request("GET", ts.URL, Options{
+		ContentLength: 5,
+		ContentType:   "x-application/vb",
+		Accept:        "x-application/c",
+		ReqBody:       strings.NewReader("Hello"),
+	})
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if contentType != "x-application/vb" {
+		t.Fatalf("I expected x-application/vb; got ", contentType)
+	}
+
+	if contentLength != "5" {
+		t.Fatalf("I expected 5 byte content length; got ", contentLength)
+	}
+
+	if accept != "x-application/c" {
+		t.Fatalf("I expected x-application/c; got ", accept)
 	}
 }
 
