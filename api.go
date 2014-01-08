@@ -41,15 +41,30 @@ func Request(method string, url string, opts Options) (*Response, error) {
 		client = new(http.Client)
 	}
 
+	contentType := opts.ContentType
+	if contentType == "" {
+		contentType = "application/json"
+	}
+
+	accept := opts.Accept
+	if accept == "" {
+		accept = "application/json"
+	}
+
 	body = nil
 	if opts.ReqBody != nil {
-		bodyText, err := json.Marshal(opts.ReqBody)
-		if err != nil {
-			return nil, err
-		}
-		body = strings.NewReader(string(bodyText))
-		if opts.DumpReqJson {
-			log.Printf("Making request:\n%#v\n", string(bodyText))
+		if contentType == "application/json" {
+			bodyText, err := json.Marshal(opts.ReqBody)
+			if err != nil {
+				return nil, err
+			}
+			body = strings.NewReader(string(bodyText))
+			if opts.DumpReqJson {
+				log.Printf("Making request:\n%#v\n", string(bodyText))
+			}
+		} else {
+			// assume opts.ReqBody implements the correct interface
+			body = opts.ReqBody.(io.Reader)
 		}
 	}
 
@@ -57,8 +72,15 @@ func Request(method string, url string, opts Options) (*Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("Accept", "application/json")
+
+	req.Header.Add("Content-Type", contentType)
+	req.Header.Add("Accept", accept)
+
+	if opts.ContentLength > 0 {
+		req.ContentLength = opts.ContentLength
+		req.Header.Add("Content-Length", string(opts.ContentLength))
+	}
+
 	if opts.MoreHeaders != nil {
 		for k, v := range opts.MoreHeaders {
 			req.Header.Add(k, v)
@@ -188,17 +210,20 @@ func Put(url string, opts Options) error {
 // Response, if set, provides a way to communicate the complete set of HTTP response, raw JSON, status code, and
 // other useful attributes back to the caller.  Note that the Request() method returns a Response structure as part
 // of its public interface; you don't need to set the Response field here to use this structure.  The Response field
-// exists primarily for legacy or deprecated functions. 
+// exists primarily for legacy or deprecated functions.
 type Options struct {
-	CustomClient *http.Client
-	ReqBody      interface{}
-	Results      interface{}
-	MoreHeaders  map[string]string
-	OkCodes      []int
-	StatusCode   *int    `DEPRECATED`
-	DumpReqJson  bool    `UNSUPPORTED`
-	ResponseJson *[]byte `DEPRECATED`
-	Response     **Response
+	CustomClient  *http.Client
+	ReqBody       interface{}
+	Results       interface{}
+	MoreHeaders   map[string]string
+	OkCodes       []int
+	StatusCode    *int    `DEPRECATED`
+	DumpReqJson   bool    `UNSUPPORTED`
+	ResponseJson  *[]byte `DEPRECATED`
+	Response      **Response
+	ContentType   string `json:"Content-Type,omitempty"`
+	ContentLength int64  `json:"Content-Length,omitempty"`
+	Accept        string `json:"Accept,omitempty"`
 }
 
 // Response contains return values from the various request calls.
