@@ -18,6 +18,7 @@ import (
 type UnexpectedResponseCodeError struct {
 	Expected []int
 	Actual   int
+	Body     []byte
 }
 
 func (err *UnexpectedResponseCodeError) Error() string {
@@ -102,9 +103,12 @@ func Request(method string, url string, opts Options) (*Response, error) {
 		*opts.StatusCode = httpResponse.StatusCode
 	}
 	if not_in(httpResponse.StatusCode, acceptableResponseCodes) {
+		b, _ := ioutil.ReadAll(httpResponse.Body)
+		httpResponse.Body.Close()
 		return &response, &UnexpectedResponseCodeError{
 			Expected: acceptableResponseCodes,
 			Actual:   httpResponse.StatusCode,
+			Body:     b,
 		}
 	}
 	if opts.Results != nil {
