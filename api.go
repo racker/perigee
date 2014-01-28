@@ -22,7 +22,7 @@ type UnexpectedResponseCodeError struct {
 }
 
 func (err *UnexpectedResponseCodeError) Error() string {
-	return fmt.Sprintf("Expected HTTP response code %d; got %d instead", err.Expected, err.Actual)
+	return fmt.Sprintf("Expected HTTP response code %d; got %d instead with the following body:\n%s", err.Expected, err.Actual, string(err.Body))
 }
 
 // Request issues an HTTP request, marshaling parameters, and unmarshaling results, as configured in the provided Options parameter.
