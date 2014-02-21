@@ -88,6 +88,13 @@ func Request(method string, url string, opts Options) (*Response, error) {
 		}
 	}
 
+	if opts.SetHeaders != nil {
+		err = opts.SetHeaders(req)
+		if err != nil {
+			return &response, err
+		}
+	}
+
 	httpResponse, err := client.Do(req)
 	if httpResponse != nil {
 		response.HttpResponse = *httpResponse
@@ -215,6 +222,10 @@ func Put(url string, opts Options) error {
 // other useful attributes back to the caller.  Note that the Request() method returns a Response structure as part
 // of its public interface; you don't need to set the Response field here to use this structure.  The Response field
 // exists primarily for legacy or deprecated functions.
+//
+// SetHeaders allows the caller to provide code to set any custom headers programmatically.  Typically, this
+// facility can invoke, e.g., SetBasicAuth() on the request to easily set up authentication.
+// Any error generated will terminate the request and will propegate back to the caller.
 type Options struct {
 	CustomClient  *http.Client
 	ReqBody       interface{}
@@ -228,6 +239,7 @@ type Options struct {
 	ContentType   string `json:"Content-Type,omitempty"`
 	ContentLength int64  `json:"Content-Length,omitempty"`
 	Accept        string `json:"Accept,omitempty"`
+	SetHeaders    func(r *http.Request) error
 }
 
 // Response contains return values from the various request calls.
