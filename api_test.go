@@ -1,6 +1,7 @@
 package perigee
 
 import (
+  "fmt"
 	"bytes"
 	"net/http"
 	"net/http/httptest"
@@ -163,3 +164,41 @@ func TestJson(t *testing.T) {
 		t.Fatalf("Results returned %v", data)
 	}
 }
+
+func TestSetHeaders(t *testing.T) {
+  var wasCalled bool
+	handler := http.HandlerFunc(
+		func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte("Hi"))
+		})
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+  _, err := Request("GET", ts.URL, Options{
+    SetHeaders: func(r *http.Request) error {
+      wasCalled = true
+      return nil
+    },
+  })
+
+  if err != nil {
+    t.Fatal(err)
+  }
+
+  if !wasCalled {
+    t.Fatal("I expected header setter callback to be called, but it wasn't")
+  }
+
+  myError := fmt.Errorf("boo")
+
+  _, err = Request("GET", ts.URL, Options{
+    SetHeaders: func(r *http.Request) error {
+      return myError
+    },
+  })
+
+  if err != myError {
+    t.Fatal("I expected errors to propegate back to the caller.")
+  }
+}
+
