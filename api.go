@@ -33,11 +33,6 @@ func Request(method string, url string, opts Options) (*Response, error) {
 	var body io.Reader
 	var response Response
 
-	acceptableResponseCodes := opts.OkCodes
-	if len(acceptableResponseCodes) == 0 {
-		acceptableResponseCodes = []int{200}
-	}
-
 	client := opts.CustomClient
 	if client == nil {
 		client = new(http.Client)
@@ -109,14 +104,18 @@ func Request(method string, url string, opts Options) (*Response, error) {
 	if opts.StatusCode != nil {
 		*opts.StatusCode = httpResponse.StatusCode
 	}
-	if not_in(httpResponse.StatusCode, acceptableResponseCodes) {
-		b, _ := ioutil.ReadAll(httpResponse.Body)
-		httpResponse.Body.Close()
-		return &response, &UnexpectedResponseCodeError{
-			Url:      url,
-			Expected: acceptableResponseCodes,
-			Actual:   httpResponse.StatusCode,
-			Body:     b,
+
+	acceptableResponseCodes := opts.OkCodes
+	if len(acceptableResponseCodes) != 0 {
+		if not_in(httpResponse.StatusCode, acceptableResponseCodes) {
+			b, _ := ioutil.ReadAll(httpResponse.Body)
+			httpResponse.Body.Close()
+			return &response, &UnexpectedResponseCodeError{
+				Url:      url,
+				Expected: acceptableResponseCodes,
+				Actual:   httpResponse.StatusCode,
+				Body:     b,
+			}
 		}
 	}
 	if opts.Results != nil {
