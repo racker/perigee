@@ -16,7 +16,7 @@ import (
 // Most often, this is due to an actual error condition (e.g., getting a 404 for a resource when you expect a 200).
 // However, it needn't always be the case (e.g., getting a 204 (No Content) response back when a 200 is expected).
 type UnexpectedResponseCodeError struct {
-	Url	string
+	Url      string
 	Expected []int
 	Actual   int
 	Body     []byte
@@ -100,7 +100,6 @@ func Request(method string, url string, opts Options) (*Response, error) {
 	if httpResponse != nil {
 		response.HttpResponse = *httpResponse
 		response.StatusCode = httpResponse.StatusCode
-		defer httpResponse.Body.Close()
 	}
 
 	if err != nil {
@@ -114,13 +113,14 @@ func Request(method string, url string, opts Options) (*Response, error) {
 		b, _ := ioutil.ReadAll(httpResponse.Body)
 		httpResponse.Body.Close()
 		return &response, &UnexpectedResponseCodeError{
-			Url:	  url,
+			Url:      url,
 			Expected: acceptableResponseCodes,
 			Actual:   httpResponse.StatusCode,
 			Body:     b,
 		}
 	}
 	if opts.Results != nil {
+		defer httpResponse.Body.Close()
 		jsonResult, err := ioutil.ReadAll(httpResponse.Body)
 		response.JsonResult = jsonResult
 		if err != nil {
