@@ -16,7 +16,7 @@ import (
 // Most often, this is due to an actual error condition (e.g., getting a 404 for a resource when you expect a 200).
 // However, it needn't always be the case (e.g., getting a 204 (No Content) response back when a 200 is expected).
 type UnexpectedResponseCodeError struct {
-	Url	string
+	Url      string
 	Expected []int
 	Actual   int
 	Body     []byte
@@ -32,11 +32,6 @@ func (err *UnexpectedResponseCodeError) Error() string {
 func Request(method string, url string, opts Options) (*Response, error) {
 	var body io.Reader
 	var response Response
-
-	acceptableResponseCodes := opts.OkCodes
-	if len(acceptableResponseCodes) == 0 {
-		acceptableResponseCodes = []int{200}
-	}
 
 	client := opts.CustomClient
 	if client == nil {
@@ -100,7 +95,6 @@ func Request(method string, url string, opts Options) (*Response, error) {
 	if httpResponse != nil {
 		response.HttpResponse = *httpResponse
 		response.StatusCode = httpResponse.StatusCode
-		defer httpResponse.Body.Close()
 	}
 
 	if err != nil {
@@ -110,17 +104,22 @@ func Request(method string, url string, opts Options) (*Response, error) {
 	if opts.StatusCode != nil {
 		*opts.StatusCode = httpResponse.StatusCode
 	}
-	if not_in(httpResponse.StatusCode, acceptableResponseCodes) {
-		b, _ := ioutil.ReadAll(httpResponse.Body)
-		httpResponse.Body.Close()
-		return &response, &UnexpectedResponseCodeError{
-			Url:	  url,
-			Expected: acceptableResponseCodes,
-			Actual:   httpResponse.StatusCode,
-			Body:     b,
+
+	acceptableResponseCodes := opts.OkCodes
+	if len(acceptableResponseCodes) != 0 {
+		if not_in(httpResponse.StatusCode, acceptableResponseCodes) {
+			b, _ := ioutil.ReadAll(httpResponse.Body)
+			httpResponse.Body.Close()
+			return &response, &UnexpectedResponseCodeError{
+				Url:      url,
+				Expected: acceptableResponseCodes,
+				Actual:   httpResponse.StatusCode,
+				Body:     b,
+			}
 		}
 	}
 	if opts.Results != nil {
+		defer httpResponse.Body.Close()
 		jsonResult, err := ioutil.ReadAll(httpResponse.Body)
 		response.JsonResult = jsonResult
 		if err != nil {
