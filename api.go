@@ -39,17 +39,17 @@ func Request(method string, url string, opts Options) (*Response, error) {
 	}
 
 	contentType := opts.ContentType
-	if contentType == "" {
-		contentType = "application/json"
-	}
-
 	accept := opts.Accept
-	if accept == "" {
-		accept = "application/json"
-	}
 
 	body = nil
 	if opts.ReqBody != nil {
+		if contentType == "" {
+			contentType = "application/json"
+		}
+		if accept == "" {
+			accept = "application/json"
+		}
+
 		if contentType == "application/json" {
 			bodyText, err := json.Marshal(opts.ReqBody)
 			if err != nil {
@@ -70,8 +70,13 @@ func Request(method string, url string, opts Options) (*Response, error) {
 		return nil, err
 	}
 
-	req.Header.Add("Content-Type", contentType)
-	req.Header.Add("Accept", accept)
+	if contentType != "" {
+		req.Header.Add("Content-Type", contentType)
+	}
+
+	if accept != "" {
+		req.Header.Add("Accept", accept)
+	}
 
 	if opts.ContentLength > 0 {
 		req.ContentLength = opts.ContentLength
