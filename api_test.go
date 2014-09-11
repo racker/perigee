@@ -1,8 +1,8 @@
 package perigee
 
 import (
-  "fmt"
 	"bytes"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -166,7 +166,7 @@ func TestJson(t *testing.T) {
 }
 
 func TestSetHeaders(t *testing.T) {
-  var wasCalled bool
+	var wasCalled bool
 	handler := http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Hi"))
@@ -174,31 +174,53 @@ func TestSetHeaders(t *testing.T) {
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
-  _, err := Request("GET", ts.URL, Options{
-    SetHeaders: func(r *http.Request) error {
-      wasCalled = true
-      return nil
-    },
-  })
+	_, err := Request("GET", ts.URL, Options{
+		SetHeaders: func(r *http.Request) error {
+			wasCalled = true
+			return nil
+		},
+	})
 
-  if err != nil {
-    t.Fatal(err)
-  }
+	if err != nil {
+		t.Fatal(err)
+	}
 
-  if !wasCalled {
-    t.Fatal("I expected header setter callback to be called, but it wasn't")
-  }
+	if !wasCalled {
+		t.Fatal("I expected header setter callback to be called, but it wasn't")
+	}
 
-  myError := fmt.Errorf("boo")
+	myError := fmt.Errorf("boo")
 
-  _, err = Request("GET", ts.URL, Options{
-    SetHeaders: func(r *http.Request) error {
-      return myError
-    },
-  })
+	_, err = Request("GET", ts.URL, Options{
+		SetHeaders: func(r *http.Request) error {
+			return myError
+		},
+	})
 
-  if err != myError {
-    t.Fatal("I expected errors to propegate back to the caller.")
-  }
+	if err != myError {
+		t.Fatal("I expected errors to propegate back to the caller.")
+	}
 }
 
+func TestBodilessMethodsAreSentWithoutContentHeaders(t *testing.T) {
+	var h map[string][]string
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h = r.Header
+	})
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	_, err := Request("GET", ts.URL, Options{})
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+
+	if len(h["Content-Type"]) != 0 {
+		t.Fatalf("I expected nothing for Content-Type but got ", h["Content-Type"])
+	}
+
+	if len(h["Content-Length"]) != 0 {
+		t.Fatalf("I expected nothing for Content-Length but got ", h["Content-Type"])
+	}
+}
