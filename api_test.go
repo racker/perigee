@@ -221,6 +221,6 @@ func TestBodilessMethodsAreSentWithoutContentHeaders(t *testing.T) {
 	}
 
 	if len(h["Content-Length"]) != 0 {
-		t.Fatalf("I expected nothing for Content-Length but got ", h["Content-Type"])
+		t.Fatalf("I expected nothing for Content-Length but got ", h["Content-Length"])
 	}
 }
