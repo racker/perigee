@@ -40,11 +40,6 @@ func Request(method string, url string, opts Options) (*Response, error) {
 
 	contentType := opts.ContentType
 
-	accept := opts.Accept
-	if accept == "" {
-		accept = "application/json"
-	}
-
 	body = nil
 	if opts.ReqBody != nil {
 		if contentType == "" {
@@ -75,8 +70,6 @@ func Request(method string, url string, opts Options) (*Response, error) {
 		req.Header.Add("Content-Type", contentType)
 	}
 
-	req.Header.Add("Accept", accept)
-
 	if opts.ContentLength > 0 {
 		req.ContentLength = opts.ContentLength
 		req.Header.Add("Content-Length", string(opts.ContentLength))
@@ -86,6 +79,14 @@ func Request(method string, url string, opts Options) (*Response, error) {
 		for k, v := range opts.MoreHeaders {
 			req.Header.Add(k, v)
 		}
+	}
+
+	if accept := req.Header.Get("Accept"); accept == "" {
+		accept = opts.Accept
+		if accept == "" {
+			accept = "application/json"
+		}
+		req.Header.Add("Accept", accept)
 	}
 
 	if opts.SetHeaders != nil {
