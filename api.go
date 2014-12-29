@@ -232,20 +232,24 @@ func Put(url string, opts Options) error {
 // SetHeaders allows the caller to provide code to set any custom headers programmatically.  Typically, this
 // facility can invoke, e.g., SetBasicAuth() on the request to easily set up authentication.
 // Any error generated will terminate the request and will propegate back to the caller.
+//
+// OmitContentType allows the caller to explicitly omit the content-type header, even if a request
+// body is provided.
 type Options struct {
-	CustomClient  *http.Client
-	ReqBody       interface{}
-	Results       interface{}
-	MoreHeaders   map[string]string
-	OkCodes       []int
-	StatusCode    *int    `DEPRECATED`
-	DumpReqJson   bool    `UNSUPPORTED`
-	ResponseJson  *[]byte `DEPRECATED`
-	Response      **Response
-	ContentType   string `json:"Content-Type,omitempty"`
-	ContentLength int64  `json:"Content-Length,omitempty"`
-	Accept        string `json:"Accept,omitempty"`
-	SetHeaders    func(r *http.Request) error
+	CustomClient    *http.Client
+	ReqBody         interface{}
+	Results         interface{}
+	MoreHeaders     map[string]string
+	OkCodes         []int
+	StatusCode      *int    `DEPRECATED`
+	DumpReqJson     bool    `UNSUPPORTED`
+	ResponseJson    *[]byte `DEPRECATED`
+	Response        **Response
+	ContentType     string `json:"Content-Type,omitempty"`
+	ContentLength   int64  `json:"Content-Length,omitempty"`
+	Accept          string `json:"Accept,omitempty"`
+	SetHeaders      func(r *http.Request) error
+	OmitContentType bool
 }
 
 // Response contains return values from the various request calls.
