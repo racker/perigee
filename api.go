@@ -42,7 +42,7 @@ func Request(method string, url string, opts Options) (*Response, error) {
 
 	body = nil
 	if opts.ReqBody != nil {
-		if contentType == "" {
+		if contentType == "" && !opts.OmitContentType {
 			contentType = "application/json"
 		}
 
