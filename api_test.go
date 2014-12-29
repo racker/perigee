@@ -257,18 +257,6 @@ func TestInferContentType(t *testing.T) {
 		t.Errorf("Expected text/plain, but was [%s]", contentType)
 	}
 
-	// It should work if the content type is provided in MoreHeaders, too.
-	_, err = Request("GET", ts.URL, Options{
-		ReqBody:     strings.NewReader("wat"),
-		MoreHeaders: map[string]string{"Content-Type": "text/plain"},
-	})
-	if err != nil {
-		t.Fatalf(err.Error())
-	}
-	if contentType := h.Get("Content-Type"); contentType != "text/plain" {
-		t.Errorf("Expected text/plain, but was [%s]", contentType)
-	}
-
 	// If explicitly told to do so, leave content-type blank
 	_, err = Request("GET", ts.URL, Options{
 		ReqBody:         strings.NewReader("wat"),
