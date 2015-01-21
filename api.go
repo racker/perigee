@@ -81,7 +81,7 @@ func Request(method string, url string, opts Options) (*Response, error) {
 		}
 	}
 
-	if accept := req.Header.Get("Accept"); accept == "" {
+	if accept := req.Header.Get("Accept"); accept == "" && !opts.OmitAccept {
 		accept = opts.Accept
 		if accept == "" {
 			accept = "application/json"
@@ -250,6 +250,7 @@ type Options struct {
 	Accept          string `json:"Accept,omitempty"`
 	SetHeaders      func(r *http.Request) error
 	OmitContentType bool
+	OmitAccept      bool
 }
 
 // Response contains return values from the various request calls.
