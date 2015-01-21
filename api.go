@@ -42,6 +42,8 @@ func Request(method string, url string, opts Options) (*Response, error) {
 
 	body = nil
 	if opts.ReqBody != nil {
+		// if the content-type header is empty, but the user expicitly asked for it
+		// to be unset, then don't set contentType to application/json.
 		if contentType == "" && !opts.OmitContentType {
 			contentType = "application/json"
 		}
@@ -81,6 +83,8 @@ func Request(method string, url string, opts Options) (*Response, error) {
 		}
 	}
 
+	// if the accept header is empty, but the user expicitly asked for it
+	// to be unset, then don't set accept to application/json.
 	if accept := req.Header.Get("Accept"); accept == "" && !opts.OmitAccept {
 		accept = opts.Accept
 		if accept == "" {
@@ -235,6 +239,8 @@ func Put(url string, opts Options) error {
 //
 // OmitContentType allows the caller to explicitly omit the content-type header, even if a request
 // body is provided.
+//
+// OmitAccept allows the caller to explicitly omit the accept header. This is needed to appease some 204 response codes.
 type Options struct {
 	CustomClient    *http.Client
 	ReqBody         interface{}
