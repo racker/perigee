@@ -42,7 +42,9 @@ func Request(method string, url string, opts Options) (*Response, error) {
 
 	body = nil
 	if opts.ReqBody != nil {
-		if contentType == "" {
+		// if the content-type header is empty, but the user expicitly asked for it
+		// to be unset, then don't set contentType to application/json.
+		if contentType == "" && !opts.OmitContentType {
 			contentType = "application/json"
 		}
 
@@ -81,7 +83,9 @@ func Request(method string, url string, opts Options) (*Response, error) {
 		}
 	}
 
-	if accept := req.Header.Get("Accept"); accept == "" {
+	// if the accept header is empty, but the user expicitly asked for it
+	// to be unset, then don't set accept to application/json.
+	if accept := req.Header.Get("Accept"); accept == "" && !opts.OmitAccept {
 		accept = opts.Accept
 		if accept == "" {
 			accept = "application/json"
@@ -232,20 +236,27 @@ func Put(url string, opts Options) error {
 // SetHeaders allows the caller to provide code to set any custom headers programmatically.  Typically, this
 // facility can invoke, e.g., SetBasicAuth() on the request to easily set up authentication.
 // Any error generated will terminate the request and will propegate back to the caller.
+//
+// OmitContentType allows the caller to explicitly omit the content-type header, even if a request
+// body is provided.
+//
+// OmitAccept allows the caller to explicitly omit the accept header. This is needed to appease some 204 response codes.
 type Options struct {
-	CustomClient  *http.Client
-	ReqBody       interface{}
-	Results       interface{}
-	MoreHeaders   map[string]string
-	OkCodes       []int
-	StatusCode    *int    `DEPRECATED`
-	DumpReqJson   bool    `UNSUPPORTED`
-	ResponseJson  *[]byte `DEPRECATED`
-	Response      **Response
-	ContentType   string `json:"Content-Type,omitempty"`
-	ContentLength int64  `json:"Content-Length,omitempty"`
-	Accept        string `json:"Accept,omitempty"`
-	SetHeaders    func(r *http.Request) error
+	CustomClient    *http.Client
+	ReqBody         interface{}
+	Results         interface{}
+	MoreHeaders     map[string]string
+	OkCodes         []int
+	StatusCode      *int    `DEPRECATED`
+	DumpReqJson     bool    `UNSUPPORTED`
+	ResponseJson    *[]byte `DEPRECATED`
+	Response        **Response
+	ContentType     string `json:"Content-Type,omitempty"`
+	ContentLength   int64  `json:"Content-Length,omitempty"`
+	Accept          string `json:"Accept,omitempty"`
+	SetHeaders      func(r *http.Request) error
+	OmitContentType bool
+	OmitAccept      bool
 }
 
 // Response contains return values from the various request calls.

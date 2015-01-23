@@ -121,15 +121,15 @@ func TestCustomHeaders(t *testing.T) {
 	}
 
 	if contentType != "x-application/vb" {
-		t.Fatalf("I expected x-application/vb; got ", contentType)
+		t.Fatalf("I expected x-application/vb; got %v", contentType)
 	}
 
 	if contentLength != "5" {
-		t.Fatalf("I expected 5 byte content length; got ", contentLength)
+		t.Fatalf("I expected 5 byte content length; got %v", contentLength)
 	}
 
 	if accept != "x-application/c" {
-		t.Fatalf("I expected x-application/c; got ", accept)
+		t.Fatalf("I expected x-application/c; got %v", accept)
 	}
 }
 
@@ -217,10 +217,55 @@ func TestBodilessMethodsAreSentWithoutContentHeaders(t *testing.T) {
 	}
 
 	if len(h["Content-Type"]) != 0 {
-		t.Fatalf("I expected nothing for Content-Type but got ", h["Content-Type"])
+		t.Fatalf("I expected nothing for Content-Type but got %v", h["Content-Type"])
 	}
 
 	if len(h["Content-Length"]) != 0 {
-		t.Fatalf("I expected nothing for Content-Length but got ", h["Content-Length"])
+		t.Fatalf("I expected nothing for Content-Length but got %v", h["Content-Length"])
+	}
+}
+
+func TestInferContentType(t *testing.T) {
+	var h http.Header
+
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h = r.Header
+	})
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
+
+	// By default, the content-type defaults to application/json when a ReqBody is provided.
+	_, err := Request("GET", ts.URL, Options{
+		ReqBody: map[string]string{"key": "value"},
+	})
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if contentType := h.Get("Content-Type"); contentType != "application/json" {
+		t.Errorf("Expected application/json, but was [%s]", contentType)
+	}
+
+	// If a content type is specified explicitly by ContentType, that should be used instead.
+	_, err = Request("GET", ts.URL, Options{
+		ReqBody:     strings.NewReader("wat"),
+		ContentType: "text/plain",
+	})
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if contentType := h.Get("Content-Type"); contentType != "text/plain" {
+		t.Errorf("Expected text/plain, but was [%s]", contentType)
+	}
+
+	// If explicitly told to do so, leave content-type blank
+	_, err = Request("GET", ts.URL, Options{
+		ReqBody:         strings.NewReader("wat"),
+		OmitContentType: true,
+	})
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	if contentType := h.Get("Content-Type"); contentType != "" {
+		t.Errorf("Expected blank content type, but was [%s]", contentType)
 	}
 }
